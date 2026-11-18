@@ -89,6 +89,8 @@ footer{margin-top:22px;color:var(--muted);font-size:.8rem}
 */
 const P=['je','tu','il','elle','nous','vous','ils','elles'];
 const AVOIR=['ai','as','a','avons','avez','ont'],ETRE=['suis','es','est','sommes','êtes','sont'];
+// Verben mit unregelmäßigem Participe passé
+const IRREG=['avoir','être','pouvoir','vouloir','faire','venir','prendre','comprendre','lire'];
 const DATA={
  'avoir':{aux:'avoir',extra:false,
   'Présent':['ai', 'as', 'a', null, 'avons', 'avez', 'ont', null],
@@ -269,12 +271,22 @@ function hint(input){
  }
  if(parts.length<2)return 'Das Hilfsverb stimmt. Jetzt fehlt noch das Participe passé.';
  const pp=parts.slice(1).join(' ');
- if(auxName==='être'){
-  const strip=s=>s.replace(/(es|e|s)$/,'');
-  const masc=strip(normalize(current.answer).split(' ').slice(1).join(' '));
-  if(strip(pp)===masc)return 'Das Hilfsverb stimmt. Achte beim Participe passé auf die Angleichung an das Subjekt (männlich/weiblich, Singular/Plural)!';
+ // Grundform des Participe passé = Form bei il (ohne Angleichung)
+ const exp=normalize(forms(current.v,current.t,2)[0]).split(' ').slice(1).join(' ');
+ const variants=[exp,exp+'e',exp+'s',exp+'es'];
+ // 1. Angleichung: Participe passé stimmt, nur die Endung e/s/es passt nicht
+ if(variants.includes(pp)){
+  if(auxName==='avoir')return 'Das Hilfsverb und das Participe passé stimmen, aber: Beim Passé composé mit avoir gibt es keine Angleichung!';
+  return 'Das Hilfsverb stimmt. Achte beim Participe passé auf die Angleichung an das Subjekt (männlich/weiblich, Singular/Plural)!';
  }
- return 'Das Hilfsverb stimmt, aber das Participe passé noch nicht. Schau im Faltheft nach, ob das Verb ein unregelmäßiges Partizip hat.';
+ // 2. Nur der Akzent fehlt oder ist falsch
+ const noAcc=s=>s.normalize('NFD').replace(/[\u0300-\u036f]/g,'');
+ if(variants.some(x=>noAcc(x)===noAcc(pp)))return 'Das Hilfsverb stimmt. Beim Participe passé fehlt der Akzent oder er ist falsch gesetzt.';
+ // 3. Unregelmäßiges Partizip
+ if(IRREG.includes(current.v))return 'Das Hilfsverb stimmt, aber das Participe passé noch nicht. <strong>'+current.v+'</strong> hat ein unregelmäßiges Participe passé.';
+ // 4. Regelmäßiges Partizip: Hinweis auf die Bildungsregel
+ const rule=/er$/.test(current.v)?'Verben auf -er → Endung -é':/dre$/.test(current.v)?'Verben auf -dre → Endung -u':'Verben auf -ir → Endung -i';
+ return 'Das Hilfsverb stimmt, aber das Participe passé noch nicht. <strong>'+current.v+'</strong> ist regelmäßig: '+rule+'.';
 }
 function stripPronoun(val){
  const pr=normalize(pronoun(current));
