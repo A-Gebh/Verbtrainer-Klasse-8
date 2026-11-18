@@ -1,0 +1,345 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Mon entraîneur de verbes – Französisch Klasse 8</title>
+<style>
+:root{color-scheme:light dark;--bg:#f5f6f8;--card:#fff;--text:#17202a;--muted:#667085;--line:#d9dee7;--accent:#315fba;--good:#16834a;--bad:#b54735}
+@media(prefers-color-scheme:dark){:root{--bg:#11151b;--card:#1b222c;--text:#edf1f7;--muted:#aab4c2;--line:#394453;--accent:#83a9f4;--good:#54d18a;--bad:#ff927f}}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font:16px/1.5 system-ui,-apple-system,Segoe UI,Roboto,sans-serif}
+main{max-width:760px;margin:0 auto;padding:24px 16px 48px}.top{display:flex;justify-content:space-between;gap:12px;align-items:center;margin-bottom:18px}
+h1{font-size:1.45rem;margin:0}h2{font-size:1.15rem;margin:0 0 12px}.sub,.muted{color:var(--muted);font-size:.92rem}
+.card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:18px;margin:14px 0}
+.choices{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:8px;margin:12px 0 18px}
+label.choice{display:flex;align-items:center;gap:10px;padding:10px;border:1px solid var(--line);border-radius:10px}
+input[type=checkbox]{width:18px;height:18px;accent-color:var(--accent);flex:none}
+button{border:1px solid var(--line);background:var(--card);color:var(--text);padding:10px 14px;border-radius:10px;font:inherit;cursor:pointer}
+button.primary{background:var(--accent);border-color:var(--accent);color:white;font-weight:650}
+button:disabled{opacity:.45;cursor:not-allowed}
+.full{width:100%}.hidden{display:none!important}
+.question{font-size:1.55rem;font-weight:700;margin:4px 0 12px}.tense{font-weight:650;color:var(--accent)}
+.row{display:flex;align-items:center;gap:10px;flex-wrap:wrap}.person{font-size:1.2rem;font-weight:650;min-width:55px}
+input[type=text]{width:100%;min-width:0;padding:12px;border:1px solid var(--line);border-radius:10px;background:var(--bg);color:var(--text);font:inherit}
+.answerwrap{flex:1;min-width:190px}.feedback{margin-top:12px}.good{color:var(--good);font-weight:750}.bad{color:var(--bad);font-weight:700}
+hr{border:0;border-top:1px solid var(--line);margin:14px 0}
+.stats{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}.stat{border:1px solid var(--line);border-radius:12px;padding:12px}.stat b{font-size:1.5rem;display:block}
+.small{font-size:.83rem}.actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
+.accents{display:flex;gap:6px;flex-wrap:wrap;margin-top:10px}.accents button{padding:6px 11px;min-width:40px}
+footer{margin-top:22px;color:var(--muted);font-size:.8rem}
+</style>
+</head>
+<body>
+<main>
+ <div class="top"><div><div class="sub">Französisch · Klasse 8</div><h1>Mon entraîneur de verbes</h1></div><div class="sub" id="state">Start</div></div>
+ <section class="card" id="setup">
+  <h2>Welche Zeitformen möchtest du üben?</h2>
+  <div class="choices" id="choices">
+   <label class="choice"><input type="checkbox" value="Présent" checked> Présent</label>
+   <label class="choice"><input type="checkbox" value="Passé composé" checked> Passé composé</label>
+  </div>
+  <p class="muted">Wähle eine oder beide Zeitformen. In jeder Aufgabe werden ein Verb und eine Person vorgegeben.</p>
+  <button class="primary full" id="start">Training starten</button>
+  <p class="small muted" id="setupError" aria-live="polite"></p>
+ </section>
+ <section class="card hidden" id="game">
+  <div class="row" style="justify-content:space-between"><span class="muted" id="number">Aufgabe 1</span><span class="muted" id="score">0 richtig</span></div>
+  <hr>
+  <div class="tense" id="tense"></div>
+  <div class="question" id="verb"></div>
+  <div class="row">
+   <div class="person" id="person"></div>
+   <div class="answerwrap"><input id="entry" type="text" placeholder="Verbform eingeben" autocomplete="off" autocapitalize="none" spellcheck="false"></div>
+  </div>
+  <div class="accents" id="accents"><button type="button">é</button><button type="button">è</button><button type="button">ê</button><button type="button">à</button><button type="button">ç</button><button type="button">î</button><button type="button">ô</button><button type="button">û</button></div>
+  <p class="small muted">Gib nur die Verbform ein, ohne Personalpronomen. Akzente zählen!
+   <span id="pcNote" class="hidden"><br><strong>Passé composé:</strong> Schreibe Hilfsverb + Participe passé (z. B. tu → <em>as attendu</em>).</span>
+   <span id="etreNote" class="hidden"><br><strong>Verb mit être:</strong> Denk an die Angleichung an das Subjekt! Bei je, tu, nous und vous ist die männliche und die weibliche Form richtig.</span></p>
+  <button class="primary full" id="check">Antwort überprüfen</button>
+  <div class="feedback" id="feedback" aria-live="polite"></div>
+  <button class="primary full hidden" id="next">Nächste Aufgabe</button>
+  <div class="actions"><button id="finish">Training beenden / Bilan</button></div>
+ </section>
+ <section class="card hidden" id="result">
+  <h2>Bilan – Deine Auswertung</h2>
+  <div class="stats">
+   <div class="stat"><span class="muted small">Abgeschlossene Aufgaben</span><b id="total">0</b></div>
+   <div class="stat"><span class="muted small">Im ersten Versuch richtig</span><b id="first">0</b></div>
+   <div class="stat"><span class="muted small">Im zweiten Versuch richtig</span><b id="second">0</b></div>
+   <div class="stat"><span class="muted small">Nach zwei Versuchen falsch</span><b id="wrong">0</b></div>
+  </div>
+  <hr><h2>Ergebnisse nach Zeitform</h2><div id="byTense"></div>
+  <hr><h2>Diese Formen solltest du wiederholen</h2><div id="review" class="muted">–</div>
+  <div class="actions"><button class="primary" id="again">Neue Runde</button><button id="back">Auswahl ändern</button></div>
+ </section>
+</main>
+<script>
+"use strict";
+/*
+  Feste Konjugationsdaten: JEDE Form ist hier ausgeschrieben.
+  Das Programm erzeugt keine Formen nach Regeln.
+  Reihenfolge der Personen: je, tu, il, elle, nous, vous, ils, elles.
+  Pro Feld: eine Form als Text, mehrere gleichwertig richtige Formen als Liste,
+  z. B. ['suis allé','suis allée']. Die erste bzw. die ersten Formen ohne / und ()
+  werden bei einer falschen Antwort als Lösung angezeigt.
+  null = wird nicht abgefragt (elle/elles nur bei Verben mit être im Passé composé,
+  weil dort die Angleichung geübt wird).
+  aux = Hilfsverb im Passé composé; extra:true = Verb aus „außerdem auch“ (nur zur Info).
+  Neue Verben werden einfach als neuer Block ergänzt.
+*/
+const P=['je','tu','il','elle','nous','vous','ils','elles'];
+const AVOIR=['ai','as','a','avons','avez','ont'],ETRE=['suis','es','est','sommes','êtes','sont'];
+const DATA={
+ 'avoir':{aux:'avoir',extra:false,
+  'Présent':['ai', 'as', 'a', null, 'avons', 'avez', 'ont', null],
+  'Passé composé':['ai eu', 'as eu', 'a eu', null, 'avons eu', 'avez eu', 'ont eu', null],
+ },
+ 'attendre':{aux:'avoir',extra:false,
+  'Présent':['attends', 'attends', 'attend', null, 'attendons', 'attendez', 'attendent', null],
+  'Passé composé':['ai attendu', 'as attendu', 'a attendu', null, 'avons attendu', 'avez attendu', 'ont attendu', null],
+ },
+ 'répondre':{aux:'avoir',extra:true,
+  'Présent':['réponds', 'réponds', 'répond', null, 'répondons', 'répondez', 'répondent', null],
+  'Passé composé':['ai répondu', 'as répondu', 'a répondu', null, 'avons répondu', 'avez répondu', 'ont répondu', null],
+ },
+ 'pouvoir':{aux:'avoir',extra:false,
+  'Présent':['peux', 'peux', 'peut', null, 'pouvons', 'pouvez', 'peuvent', null],
+  'Passé composé':['ai pu', 'as pu', 'a pu', null, 'avons pu', 'avez pu', 'ont pu', null],
+ },
+ 'vouloir':{aux:'avoir',extra:false,
+  'Présent':['veux', 'veux', 'veut', null, 'voulons', 'voulez', 'veulent', null],
+  'Passé composé':['ai voulu', 'as voulu', 'a voulu', null, 'avons voulu', 'avez voulu', 'ont voulu', null],
+ },
+ 'faire':{aux:'avoir',extra:false,
+  'Présent':['fais', 'fais', 'fait', null, 'faisons', 'faites', 'font', null],
+  'Passé composé':['ai fait', 'as fait', 'a fait', null, 'avons fait', 'avez fait', 'ont fait', null],
+ },
+ 'être':{aux:'avoir',extra:false,
+  'Présent':['suis', 'es', 'est', null, 'sommes', 'êtes', 'sont', null],
+  'Passé composé':['ai été', 'as été', 'a été', null, 'avons été', 'avez été', 'ont été', null],
+ },
+ 'descendre':{aux:'être',extra:false,
+  'Présent':['descends', 'descends', 'descend', null, 'descendons', 'descendez', 'descendent', null],
+  'Passé composé':[['suis descendu', 'suis descendue', 'suis descendu/e', 'suis descendu(e)'], ['es descendu', 'es descendue', 'es descendu/e', 'es descendu(e)'], 'est descendu', 'est descendue', ['sommes descendus', 'sommes descendues', 'sommes descendu(e)s'], ['êtes descendu', 'êtes descendue', 'êtes descendus', 'êtes descendues', 'êtes descendu(e)(s)', 'êtes descendu(e)s'], 'sont descendus', 'sont descendues'],
+ },
+ 'venir':{aux:'être',extra:false,
+  'Présent':['viens', 'viens', 'vient', null, 'venons', 'venez', 'viennent', null],
+  'Passé composé':[['suis venu', 'suis venue', 'suis venu/e', 'suis venu(e)'], ['es venu', 'es venue', 'es venu/e', 'es venu(e)'], 'est venu', 'est venue', ['sommes venus', 'sommes venues', 'sommes venu(e)s'], ['êtes venu', 'êtes venue', 'êtes venus', 'êtes venues', 'êtes venu(e)(s)', 'êtes venu(e)s'], 'sont venus', 'sont venues'],
+ },
+ 'aimer':{aux:'avoir',extra:false,
+  'Présent':['aime', 'aimes', 'aime', null, 'aimons', 'aimez', 'aiment', null],
+  'Passé composé':['ai aimé', 'as aimé', 'a aimé', null, 'avons aimé', 'avez aimé', 'ont aimé', null],
+ },
+ 'chanter':{aux:'avoir',extra:true,
+  'Présent':['chante', 'chantes', 'chante', null, 'chantons', 'chantez', 'chantent', null],
+  'Passé composé':['ai chanté', 'as chanté', 'a chanté', null, 'avons chanté', 'avez chanté', 'ont chanté', null],
+ },
+ 'danser':{aux:'avoir',extra:true,
+  'Présent':['danse', 'danses', 'danse', null, 'dansons', 'dansez', 'dansent', null],
+  'Passé composé':['ai dansé', 'as dansé', 'a dansé', null, 'avons dansé', 'avez dansé', 'ont dansé', null],
+ },
+ 'jouer':{aux:'avoir',extra:true,
+  'Présent':['joue', 'joues', 'joue', null, 'jouons', 'jouez', 'jouent', null],
+  'Passé composé':['ai joué', 'as joué', 'a joué', null, 'avons joué', 'avez joué', 'ont joué', null],
+ },
+ 'gagner':{aux:'avoir',extra:true,
+  'Présent':['gagne', 'gagnes', 'gagne', null, 'gagnons', 'gagnez', 'gagnent', null],
+  'Passé composé':['ai gagné', 'as gagné', 'a gagné', null, 'avons gagné', 'avez gagné', 'ont gagné', null],
+ },
+ 'acheter':{aux:'avoir',extra:true,
+  'Présent':['achète', 'achètes', 'achète', null, 'achetons', 'achetez', 'achètent', null],
+  'Passé composé':['ai acheté', 'as acheté', 'a acheté', null, 'avons acheté', 'avez acheté', 'ont acheté', null],
+ },
+ 'chiller':{aux:'avoir',extra:true,
+  'Présent':['chille', 'chilles', 'chille', null, 'chillons', 'chillez', 'chillent', null],
+  'Passé composé':['ai chillé', 'as chillé', 'a chillé', null, 'avons chillé', 'avez chillé', 'ont chillé', null],
+ },
+ 'manger':{aux:'avoir',extra:true,
+  'Présent':['mange', 'manges', 'mange', null, 'mangeons', 'mangez', 'mangent', null],
+  'Passé composé':['ai mangé', 'as mangé', 'a mangé', null, 'avons mangé', 'avez mangé', 'ont mangé', null],
+ },
+ 'chatter':{aux:'avoir',extra:true,
+  'Présent':['chatte', 'chattes', 'chatte', null, 'chattons', 'chattez', 'chattent', null],
+  'Passé composé':['ai chatté', 'as chatté', 'a chatté', null, 'avons chatté', 'avez chatté', 'ont chatté', null],
+ },
+ 'finir':{aux:'avoir',extra:false,
+  'Présent':['finis', 'finis', 'finit', null, 'finissons', 'finissez', 'finissent', null],
+  'Passé composé':['ai fini', 'as fini', 'a fini', null, 'avons fini', 'avez fini', 'ont fini', null],
+ },
+ 'prendre':{aux:'avoir',extra:false,
+  'Présent':['prends', 'prends', 'prend', null, 'prenons', 'prenez', 'prennent', null],
+  'Passé composé':['ai pris', 'as pris', 'a pris', null, 'avons pris', 'avez pris', 'ont pris', null],
+ },
+ 'comprendre':{aux:'avoir',extra:false,
+  'Présent':['comprends', 'comprends', 'comprend', null, 'comprenons', 'comprenez', 'comprennent', null],
+  'Passé composé':['ai compris', 'as compris', 'a compris', null, 'avons compris', 'avez compris', 'ont compris', null],
+ },
+ 'lire':{aux:'avoir',extra:false,
+  'Présent':['lis', 'lis', 'lit', null, 'lisons', 'lisez', 'lisent', null],
+  'Passé composé':['ai lu', 'as lu', 'a lu', null, 'avons lu', 'avez lu', 'ont lu', null],
+ },
+ 'tomber':{aux:'être',extra:false,
+  'Présent':['tombe', 'tombes', 'tombe', null, 'tombons', 'tombez', 'tombent', null],
+  'Passé composé':[['suis tombé', 'suis tombée', 'suis tombé/e', 'suis tombé(e)'], ['es tombé', 'es tombée', 'es tombé/e', 'es tombé(e)'], 'est tombé', 'est tombée', ['sommes tombés', 'sommes tombées', 'sommes tombé(e)s'], ['êtes tombé', 'êtes tombée', 'êtes tombés', 'êtes tombées', 'êtes tombé(e)(s)', 'êtes tombé(e)s'], 'sont tombés', 'sont tombées'],
+ },
+ 'rester':{aux:'être',extra:true,
+  'Présent':['reste', 'restes', 'reste', null, 'restons', 'restez', 'restent', null],
+  'Passé composé':[['suis resté', 'suis restée', 'suis resté/e', 'suis resté(e)'], ['es resté', 'es restée', 'es resté/e', 'es resté(e)'], 'est resté', 'est restée', ['sommes restés', 'sommes restées', 'sommes resté(e)s'], ['êtes resté', 'êtes restée', 'êtes restés', 'êtes restées', 'êtes resté(e)(s)', 'êtes resté(e)s'], 'sont restés', 'sont restées'],
+ },
+ 'monter':{aux:'être',extra:true,
+  'Présent':['monte', 'montes', 'monte', null, 'montons', 'montez', 'montent', null],
+  'Passé composé':[['suis monté', 'suis montée', 'suis monté/e', 'suis monté(e)'], ['es monté', 'es montée', 'es monté/e', 'es monté(e)'], 'est monté', 'est montée', ['sommes montés', 'sommes montées', 'sommes monté(e)s'], ['êtes monté', 'êtes montée', 'êtes montés', 'êtes montées', 'êtes monté(e)(s)', 'êtes monté(e)s'], 'sont montés', 'sont montées'],
+ },
+ 'arriver':{aux:'être',extra:true,
+  'Présent':['arrive', 'arrives', 'arrive', null, 'arrivons', 'arrivez', 'arrivent', null],
+  'Passé composé':[['suis arrivé', 'suis arrivée', 'suis arrivé/e', 'suis arrivé(e)'], ['es arrivé', 'es arrivée', 'es arrivé/e', 'es arrivé(e)'], 'est arrivé', 'est arrivée', ['sommes arrivés', 'sommes arrivées', 'sommes arrivé(e)s'], ['êtes arrivé', 'êtes arrivée', 'êtes arrivés', 'êtes arrivées', 'êtes arrivé(e)(s)', 'êtes arrivé(e)s'], 'sont arrivés', 'sont arrivées'],
+ },
+ 'entrer':{aux:'être',extra:true,
+  'Présent':['entre', 'entres', 'entre', null, 'entrons', 'entrez', 'entrent', null],
+  'Passé composé':[['suis entré', 'suis entrée', 'suis entré/e', 'suis entré(e)'], ['es entré', 'es entrée', 'es entré/e', 'es entré(e)'], 'est entré', 'est entrée', ['sommes entrés', 'sommes entrées', 'sommes entré(e)s'], ['êtes entré', 'êtes entrée', 'êtes entrés', 'êtes entrées', 'êtes entré(e)(s)', 'êtes entré(e)s'], 'sont entrés', 'sont entrées'],
+ },
+ 'rentrer':{aux:'être',extra:true,
+  'Présent':['rentre', 'rentres', 'rentre', null, 'rentrons', 'rentrez', 'rentrent', null],
+  'Passé composé':[['suis rentré', 'suis rentrée', 'suis rentré/e', 'suis rentré(e)'], ['es rentré', 'es rentrée', 'es rentré/e', 'es rentré(e)'], 'est rentré', 'est rentrée', ['sommes rentrés', 'sommes rentrées', 'sommes rentré(e)s'], ['êtes rentré', 'êtes rentrée', 'êtes rentrés', 'êtes rentrées', 'êtes rentré(e)(s)', 'êtes rentré(e)s'], 'sont rentrés', 'sont rentrées'],
+ },
+ 'retourner':{aux:'être',extra:true,
+  'Présent':['retourne', 'retournes', 'retourne', null, 'retournons', 'retournez', 'retournent', null],
+  'Passé composé':[['suis retourné', 'suis retournée', 'suis retourné/e', 'suis retourné(e)'], ['es retourné', 'es retournée', 'es retourné/e', 'es retourné(e)'], 'est retourné', 'est retournée', ['sommes retournés', 'sommes retournées', 'sommes retourné(e)s'], ['êtes retourné', 'êtes retournée', 'êtes retournés', 'êtes retournées', 'êtes retourné(e)(s)', 'êtes retourné(e)s'], 'sont retournés', 'sont retournées'],
+ },
+ 'sortir':{aux:'être',extra:false,
+  'Présent':['sors', 'sors', 'sort', null, 'sortons', 'sortez', 'sortent', null],
+  'Passé composé':[['suis sorti', 'suis sortie', 'suis sorti/e', 'suis sorti(e)'], ['es sorti', 'es sortie', 'es sorti/e', 'es sorti(e)'], 'est sorti', 'est sortie', ['sommes sortis', 'sommes sorties', 'sommes sorti(e)s'], ['êtes sorti', 'êtes sortie', 'êtes sortis', 'êtes sorties', 'êtes sorti(e)(s)', 'êtes sorti(e)s'], 'sont sortis', 'sont sorties'],
+ },
+ 'partir':{aux:'être',extra:false,
+  'Présent':['pars', 'pars', 'part', null, 'partons', 'partez', 'partent', null],
+  'Passé composé':[['suis parti', 'suis partie', 'suis parti/e', 'suis parti(e)'], ['es parti', 'es partie', 'es parti/e', 'es parti(e)'], 'est parti', 'est partie', ['sommes partis', 'sommes parties', 'sommes parti(e)s'], ['êtes parti', 'êtes partie', 'êtes partis', 'êtes parties', 'êtes parti(e)(s)', 'êtes parti(e)s'], 'sont partis', 'sont parties'],
+ },
+ 'aller':{aux:'être',extra:false,
+  'Présent':['vais', 'vas', 'va', null, 'allons', 'allez', 'vont', null],
+  'Passé composé':[['suis allé', 'suis allée', 'suis allé/e', 'suis allé(e)'], ['es allé', 'es allée', 'es allé/e', 'es allé(e)'], 'est allé', 'est allée', ['sommes allés', 'sommes allées', 'sommes allé(e)s'], ['êtes allé', 'êtes allée', 'êtes allés', 'êtes allées', 'êtes allé(e)(s)', 'êtes allé(e)s'], 'sont allés', 'sont allées'],
+ },
+};
+const verbs=Object.keys(DATA);
+function forms(v,t,i){
+ const x=DATA[v]&&DATA[v][t]?DATA[v][t][i]:null;
+ if(x==null)return null;
+ return Array.isArray(x)?x:[x];
+}
+const $=id=>document.getElementById(id);
+let selected=[],current=null,attempt=0,completed=[],seen=[],pool=[];
+function normalize(s){return s.trim().replace(/\s+/g,' ').toLocaleLowerCase('fr-FR').normalize('NFC').replace(/[’‘`´]/g,"'").replace(/'\s+/g,"'");}
+function shown(c){return c.answers.filter(a=>!/[\/()]/.test(a));}
+function buildPool(){
+ const p=[];
+ for(const t of selected)for(const v of verbs){
+  for(let i=0;i<P.length;i++){const answers=forms(v,t,i);if(answers)p.push({t,v,i,answers,answer:answers[0]});}
+ }
+ return p;
+}
+function pronoun(c){
+ if(c.i===0&&/^[aeiouhéèêàâîôûœ]/i.test(c.answers[0]))return "j'";
+ return P[c.i];
+}
+function isEtrePC(c){return c.t==='Passé composé'&&DATA[c.v].aux==='être';}
+function nextQuestion(){
+ let choices=pool.filter(x=>!seen.slice(-3).some(y=>y.t===x.t&&y.v===x.v&&y.i===x.i));
+ if(!choices.length)choices=pool;
+ current=choices[Math.floor(Math.random()*choices.length)];
+ attempt=0;seen.push(current);
+ $('tense').textContent=current.t;$('verb').textContent=current.v;$('person').textContent=pronoun(current);
+ $('entry').value='';$('entry').disabled=false;$('check').classList.remove('hidden');$('check').disabled=false;
+ $('next').classList.add('hidden');$('feedback').textContent='';
+ $('pcNote').classList.toggle('hidden',current.t!=='Passé composé');
+ $('etreNote').classList.toggle('hidden',!isEtrePC(current));
+ $('number').textContent='Aufgabe '+(completed.length+1);
+ $('score').textContent=completed.filter(x=>x.result!=='falsch').length+' richtig';
+ $('entry').focus();
+}
+function hint(input){
+ if(current.t==='Présent')return 'Die Form stimmt noch nicht. Überprüfe die Schreibweise und die Endung im Présent.';
+ const parts=input.split(' ');
+ const expAux=normalize(current.answer).split(' ')[0];
+ const auxName=DATA[current.v].aux;
+ if(parts[0]!==expAux){
+  const other=auxName==='être'?AVOIR:ETRE;
+  if(other.includes(parts[0]))return 'Achtung, falsches Hilfsverb! <strong>'+current.v+'</strong> bildet das Passé composé mit <strong>'+auxName+'</strong>.';
+  if((auxName==='être'?ETRE:AVOIR).includes(parts[0]))return 'Das Hilfsverb '+auxName+' ist richtig gewählt, aber nicht passend zur Person konjugiert.';
+  if(parts.length===1)return 'Im Passé composé brauchst du zwei Teile: Hilfsverb (avoir/être) + Participe passé.';
+  return 'Überprüfe das Hilfsverb: Ist es '+auxName+' und passt es zur Person?';
+ }
+ if(parts.length<2)return 'Das Hilfsverb stimmt. Jetzt fehlt noch das Participe passé.';
+ const pp=parts.slice(1).join(' ');
+ if(auxName==='être'){
+  const strip=s=>s.replace(/(es|e|s)$/,'');
+  const masc=strip(normalize(current.answer).split(' ').slice(1).join(' '));
+  if(strip(pp)===masc)return 'Das Hilfsverb stimmt. Achte beim Participe passé auf die Angleichung an das Subjekt (männlich/weiblich, Singular/Plural)!';
+ }
+ return 'Das Hilfsverb stimmt, aber das Participe passé noch nicht. Schau im Faltheft nach, ob das Verb ein unregelmäßiges Partizip hat.';
+}
+function stripPronoun(val){
+ const pr=normalize(pronoun(current));
+ if(pr==="j'"&&val.startsWith("j'"))return val.slice(2).trim();
+ if(val.startsWith(pr+' '))return val.slice(pr.length).trim();
+ return val;
+}
+function check(){
+ const raw=normalize($('entry').value);
+ const val=stripPronoun(raw);
+ if(!val){$('feedback').textContent='Bitte gib eine Verbform ein.';return;}
+ if(current.answers.some(a=>val===normalize(a))){
+  completed.push({...current,result:attempt===0?'erstversuch':'zweiterVersuch'});
+  $('feedback').innerHTML='<span class="good">✓ Richtig!</span><hr>';
+  $('entry').disabled=true;$('check').classList.add('hidden');$('next').classList.remove('hidden');
+  $('score').textContent=completed.filter(x=>x.result!=='falsch').length+' richtig';
+ }else{
+  attempt++;
+  if(attempt===1){
+   $('feedback').innerHTML='<span class="bad">Noch nicht richtig.</span><p>'+hint(val)+'</p><p class="muted">Du hast einen zweiten Versuch.</p>';
+   $('entry').value='';$('entry').focus();
+  }else{
+   completed.push({...current,result:'falsch'});
+   const pr=pronoun(current),pre=pr==="j'"?pr:pr+' ';
+   const sol=shown(current).map(a=>'<strong>'+pre+a+'</strong>').join(' oder ');
+   $('feedback').innerHTML='<span class="bad">Noch nicht richtig.</span><p>Richtig ist: '+sol+'.</p><hr><p class="muted">Diese Form solltest du noch einmal üben.</p>';
+   $('entry').disabled=true;$('check').classList.add('hidden');$('next').classList.remove('hidden');
+  }
+ }
+}
+function start(){
+ selected=[...document.querySelectorAll('#choices input:checked')].map(x=>x.value);
+ if(!selected.length){$('setupError').textContent='Bitte wähle mindestens eine Zeitform.';return;}
+ $('setupError').textContent='';
+ pool=buildPool();completed=[];seen=[];
+ $('setup').classList.add('hidden');$('result').classList.add('hidden');$('game').classList.remove('hidden');$('state').textContent='Training läuft';nextQuestion();
+}
+function bilan(){
+ $('game').classList.add('hidden');$('result').classList.remove('hidden');$('state').textContent='Bilan';
+ $('total').textContent=completed.length;
+ $('first').textContent=completed.filter(x=>x.result==='erstversuch').length;
+ $('second').textContent=completed.filter(x=>x.result==='zweiterVersuch').length;
+ $('wrong').textContent=completed.filter(x=>x.result==='falsch').length;
+ $('byTense').innerHTML=selected.map(t=>{
+  const a=completed.filter(x=>x.t===t);
+  return '<p>'+t+': <strong>'+a.filter(x=>x.result!=='falsch').length+' von '+a.length+'</strong> Aufgaben richtig abgeschlossen</p>';
+ }).join('');
+ const weak=[...new Set(completed.filter(x=>x.result!=='erstversuch').map(x=>x.v+' ('+x.t+')'))];
+ $('review').textContent=weak.length?weak.join(', '):'Keine Formen zum Wiederholen aus dieser Runde.';
+}
+$('start').addEventListener('click',start);$('check').addEventListener('click',check);
+document.addEventListener('keydown',e=>{
+ if(e.key!=='Enter'||e.repeat||$('game').classList.contains('hidden'))return;
+ e.preventDefault();
+ if(!$('check').classList.contains('hidden'))check();
+ else if(!$('next').classList.contains('hidden'))nextQuestion();
+});
+$('next').addEventListener('click',nextQuestion);$('finish').addEventListener('click',bilan);
+$('again').addEventListener('click',()=>{completed=[];seen=[];$('result').classList.add('hidden');$('game').classList.remove('hidden');$('state').textContent='Training läuft';nextQuestion();});
+$('back').addEventListener('click',()=>{$('result').classList.add('hidden');$('setup').classList.remove('hidden');$('state').textContent='Start';});
+document.querySelectorAll('#accents button').forEach(b=>b.addEventListener('click',()=>{
+ const el=$('entry');if(el.disabled)return;
+ const s=el.selectionStart??el.value.length,e=el.selectionEnd??el.value.length;
+ el.value=el.value.slice(0,s)+b.textContent+el.value.slice(e);
+ el.focus();el.setSelectionRange(s+1,s+1);
+}));
+</script>
+</body></html>
